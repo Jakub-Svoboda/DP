@@ -81,58 +81,69 @@ def main():
 
 	#create dataset
 	dataset = datasetManager.Dataset()
-
-	#load images
-	path = os.path.join("celebA","Img", "img_align_celeba")
-
-	onlyfiles = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-	f = []
-	for (dirpath, dirnames, filenames) in os.walk(path):
-		f.extend(filenames)
-		break
-
-	trainList = filenames[:162770]
-	valList = filenames[162770:182638]
-	testList = filenames[182638:]
-	print(str(len(trainList)) + " train images")
-	print(str(len(valList)) + " validation images")
-	print(str(len(testList)) + " test images")
-
-	#load labels
-	labelPath = os.path.join("celebA","Anno", "identity_CelebA.txt")
-	labels = []
-	with open(labelPath) as csvfile:
-		spamreader = csv.reader(csvfile, delimiter=' ')
-		for row in spamreader:
-			labels.append(int(row[1]))
-
-	#start multiprocessing for image processing
-	procs = []
-	rets = []
-	numOfProcs = multiprocessing.cpu_count()
-	imagesPerProcess = 162770 // numOfProcs		#get the number that each processor has to parse
-	#imagesPerProcess = 20//numOfProcs
-	q = Queue()
-	for num in range(0,numOfProcs):
-		print(num, imagesPerProcess*num, imagesPerProcess*(num+1))
-		p = Process(target=loadFaces, args=(q, arguments, path, trainList, imagesPerProcess*num, imagesPerProcess*(num+1), labels, 100))
-		p.start()
-		procs.append(p)
-
-	for p in procs:
-		ret = q.get() # will block
-		rets.append(ret)
-	for p in procs:
-		p.join()
-
-	#merge the partial datasets
-	dataset.faceDataset = rets[0].faceDataset
-	dataset.labels = rets[0].labels
-	for num in range(1,numOfProcs): 
-		dataset.faceDataset = np.concatenate((dataset.faceDataset, rets[num].faceDataset))
-		dataset.labels = np.concatenate((dataset.labels, rets[num].labels))
 	
-	dataset.saveDataset()
+
+
+	def generateMasks():
+		#load images
+		path = os.path.join("celebA","Img", "img_align_celeba")
+
+		onlyfiles = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+		f = []
+		for (dirpath, dirnames, filenames) in os.walk(path):
+			f.extend(filenames)
+			break
+
+		trainList = filenames[:162770]
+		valList = filenames[162770:182638]
+		testList = filenames[182638:]
+		print(str(len(trainList)) + " train images")
+		print(str(len(valList)) + " validation images")
+		print(str(len(testList)) + " test images")
+
+		#load identities
+		labelPath = os.path.join("celebA","Anno", "identity_CelebA.txt")
+		identities = []
+		with open(labelPath) as csvfile:
+			spamreader = csv.reader(csvfile, delimiter=' ')
+			for row in spamreader:
+				identities.append(int(row[1]))
+
+		#start multiprocessing for image processing
+		procs = []
+		rets = []
+		numOfProcs = multiprocessing.cpu_count()
+		imagesPerProcess = 162770 // numOfProcs		#get the number that each processor has to parse
+		q = Queue()
+		for num in range(0,numOfProcs):
+			print(num, imagesPerProcess*num, imagesPerProcess*(num+1))
+			p = Process(target=loadFaces, args=(q, arguments, path, trainList, imagesPerProcess*num, imagesPerProcess*(num+1), identities, 100))
+			p.start()
+			procs.append(p)
+
+		for p in procs:
+			ret = q.get() # will block
+			rets.append(ret)
+		for p in procs:
+			p.join()
+
+		#merge the partial datasets
+		dataset.faceDataset = rets[0].faceDataset
+		dataset.identities = rets[0].identities
+		for num in range(1,numOfProcs): 
+			dataset.faceDataset = np.concatenate((dataset.faceDataset, rets[num].faceDataset))
+			dataset.identities = np.concatenate((dataset.identities, rets[num].identities))
+
+	
+	#Uncomment for new parsing of dataset
+	#generateMasks()
+	#dataset.saveDataset()
+
+	dataset.loadDataset()
+	
+
+	#create a list of comparison images so that each network can train on 2 images
+	dataset.createPairs()
 	print(dataset)
 
 if __name__ == "__main__":

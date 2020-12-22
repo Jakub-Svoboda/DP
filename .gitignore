@@ -1,7 +1,7 @@
 #custom
 lfw/
 celebA/
-celebA/*
+celebA/Img/img_align_celeba/
 .vscode/
 .pylintrc
 file.txt
@@ -140,3 +140,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
