@@ -1,0 +1,189 @@
+QPushButton#closeButton{
+	color: black;
+	border: 0px;
+	background: none;
+	border-radius: 0px;
+}
+QPushButton#closeButton:hover{
+	color:gray;
+}
+
+QPushButton#minimizeButton{
+	color: black;
+	border: 0px;
+	background: none;
+	border-radius: 0px;
+}
+QPushButton#minimizeButton:hover{
+	color:gray;
+}
+
+QPushButton#maximizeButton{
+	color: black;
+	border: 0px;
+	background: none;
+	border-radius: 0px;
+}
+QPushButton#maximizeButton:hover{
+	color:gray;
+}
+
+QFrame#leftFrame{
+	background: rgb(30,40,75);
+}
+
+QFrame#centerFrame{
+	background: rgb(30,40,70);
+}
+
+QWidget#mainFrame{
+	background: rgb(228,233,236);
+}
+
+QWidget#topBar{
+	background: rgb(228,233,236);
+}
+
+QLabel#label{
+	color: white;
+}
+
+QWidget#menuFrame{
+	background: rgb(44,58,93);
+}
+
+QPushButton#databaseButton{
+	color: white;
+	text-align: left;
+	margin-left: 10px;
+}
+QPushButton#databaseButton:hover{
+	color: gray;
+}
+
+
+QPushButton#analysisButton{
+	color: white;
+	text-align: left;
+	margin-left: 10px;
+}
+QPushButton#analysisButton:hover{
+	color: gray;
+}
+
+QLabel#headerLabel{
+	background: rgb(228,233,236);
+	padding-left: 10px;
+}
+
+QPushButton#saveButton{
+	border-style: solid;
+	border-width: 1px;
+	background: rgb(45,60,93);
+	color: white;
+}
+QPushButton#saveButton:hover{
+	color:gray;
+}
+QPushButton#loadButton{
+	border-style: solid;
+	border-width: 1px;
+	background: rgb(45,60,93);
+	color: white;
+}
+QPushButton#loadButton:hover{
+	color:gray;
+}
+
+QTableWidget#dbTable{
+	background: rgb(255,255,255);
+}
+
+
+QPushButton#addCameraButton{
+	background: rgb(1,110,192);
+	color: white;
+}
+QPushButton#addCameraButton:hover{
+	color:gray;
+}
+QPushButton#addCameraButton:disabled{
+	background : #dddddd;
+}
+QPushButton#addImageButton{
+	background: rgb(1,110,192);
+	color: white;
+}
+QPushButton#addImageButton:hover{
+	color:gray;
+}
+QPushButton#addImageButton:disabled{
+	background : #dddddd;
+}
+
+
+QPushButton#captureButton{
+	background: rgb(1,110,192);
+	color: white;
+}
+QPushButton#captureButton:hover{
+	color:gray;
+}
+QPushButton#captureButton:disabled{
+	background : #dddddd;
+}
+QComboBox#comboBox{
+	background: rgb(228,233,236);
+	border-style: inset;
+	border-width: 1px;
+	border-color: gray;
+}
+
+
+
+QPushButton#analyzeImageButton{
+	background: rgb(1,110,192);
+	color: white;
+}
+QPushButton#analyzeImageButton:hover{
+	color:gray;
+}
+QPushButton#analyzeImageButton:disabled{
+	background : #dddddd;
+}
+
+
+QPushButton#analyzeCameraButton{
+	background: rgb(1,110,192);
+	color: white;
+}
+QPushButton#analyzeCameraButton:hover{
+	color:gray;
+}
+QPushButton#analyzeCameraButton:disabled{
+	background : #dddddd;
+}
+
+
+QPushButton#captureButton2{
+	background: rgb(1,110,192);
+	color: white;
+}
+QPushButton#captureButton2:hover{
+	color:gray;
+}
+QPushButton#captureButton2:disabled{
+	background : #dddddd;
+}
+
+
+QLineEdit#lineEdit{
+	background: rgb(228,233,236);
+}
+
+
+
+
+QWidget{
+	border : 0;
+}

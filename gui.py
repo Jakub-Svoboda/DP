@@ -5,12 +5,16 @@ from PyQt5.QtWidgets import *
 
 import sys
 import cv2
-import csv
 import numpy as np
-import datetime
-import os
 import xml.etree.ElementTree as ET
-import re
+import pickle
+import time
+import os
+
+from network import IdentityNetwork
+from database import Database
+
+
 
 class Ui(QMainWindow):
 	def __init__(self):
@@ -22,9 +26,6 @@ class Ui(QMainWindow):
 		# Set mouse tracking for tracking events
 		self.setMouseTracking(True)
 
-		# Set borderless window style
-		self.setWindowFlags(Qt.FramelessWindowHint)
-
 		# Set the custom Top Bar buttons to appropriate functions (minimize, maximize, close)
 		self.setButtons()
 		
@@ -35,31 +36,24 @@ class Ui(QMainWindow):
 		sshFile="gui/style.sheet"
 		with open(sshFile,"r") as fh:
 			self.setStyleSheet(fh.read())
-			
-		self.roundCorners()
 
-		# The top bar widget should move the window when dragged, bind the appropritate function
-		self.topBar.mouseMoveEvent = self.moveWindow
+		self.disableWidgets()	
+			
+		# Initialize MTCNN detector
+		self.network = IdentityNetwork()	
 
 		# Click the database button on startup to enable it
 		self.databaseClicked()
 
-		# Set the database tabs invisible until a database is loaded
-		#self.dbTab.setVisible(False)
+		# Initialize the databse
+		self.initDB()
 
 		# Display the window
 		self.show()
 		
 
+	# Connects control buttons to appropriate functions
 	def setButtons(self):
-		self.closeButton.clicked.connect(QApplication.quit)
-		self.maximizeButton.clicked.connect(self.maximizeClicked)
-		self.minimizeButton.clicked.connect(self.showMinimized)
-		
-		# Set icons for top bar buttons
-		self.closeButton.setIcon(QIcon("gui/icons/close.svg"))
-		self.maximizeButton.setIcon(QIcon("gui/icons/maximize.svg"))
-		self.minimizeButton.setIcon(QIcon("gui/icons/minimize.svg"))
 
 		# Set icons for the buttons in the left menu
 		self.databaseButton.setIcon(QIcon("gui/icons/database2.png"))
@@ -81,13 +75,116 @@ class Ui(QMainWindow):
 		self.addCameraButton.clicked.connect(self.takeCameraImage)
 		self.addImageButton.clicked.connect(self.selectImage)
 
-		# Connec the capture button
+		# Connect the capture button
 		self.captureButton.clicked.connect(self.captureClicked)
 
-		
-	def takeCameraImage(self):
+		# Connect Load Database / Save Database buttons to functions
+		self.loadButton.clicked.connect(self.loadDB)
+		self.saveButton.clicked.connect(self.saveDB)
+
+		# Connect the analyze Image/Camera buttons
+		self.analyzeImageButton.clicked.connect(self.analyzeImage)
+		self.analyzeCameraButton.clicked.connect(self.analyzeCameraImage)
+
+		# Connect the analysis capture button
+		self.captureButton2.clicked.connect(self.analyze)
+
+
+	# Disable widgets which should not be loaded without database being present
+	def disableWidgets(self):
+		self.stackedWidget.setEnabled(False)
+
+
+	# Enable widgets when a database is loaded
+	def enableWidgets(self):
+		self.stackedWidget.setEnabled(True)
+
+	# Initialize the database and the display table
+	def initDB(self):
+		self.db = None
+		self.table = QTableView()
+		self.verticalLayout_7.addWidget(self.table)
+
+
+	# The main image analysis process for matching identities
+	def analyze(self):
 		if hasattr(self, "t"):
+			self.t.requestInterruption()
+		img = self.analysisImageDisplay.pixmap()
+		if img is None:
 			return
+		if hasattr(self, "cvImg"):
+			# Get the embedding from the network	
+			embedding = self.network.detectFaces(self.cvImg)
+			if embedding is None:
+				self.resultLabel.setText('No face detected with MTCNN')
+				return 
+			# Get the identity from the database
+			minId, name, dist = self.db.findFace(embedding)	
+			self.resultLabel.setText('Name: ' + str(name) +'\nID: ' + str(minId) + '\nDistance: ' + str(dist.numpy()))
+			print(minId, name, dist)
+			print('---')
+		else:
+			print('No face found')
+
+
+	# Runs when the analysis of a camera feed is requested
+	def analyzeImage(self):
+		self.resultLabel.setText('')
+		imgPath, _ = QFileDialog.getOpenFileName(self,"Select Image File", "","image (*.jpg *.jpeg *.png *.gif)")
+		img = cv2.imread(imgPath)
+		self.cvImg = img
+		if img is None:
+			return
+		h, w, _ = img.shape
+		h = h//2
+		w = w//2		
+		img = cv2.rectangle(img,(w-150,h-190),(w+150,h+190),(0,255,0),3)	
+		qtImg = self.convert_cv_qt(img)
+		self.analysisImageDisplay.setPixmap(qtImg)
+
+
+	#Updates the label with a new opencv image	
+	@pyqtSlot(np.ndarray)
+	def updateAnalysisImage(self, img):
+		qtImg = self.convert_cv_qt(img)
+		self.analysisImageDisplay.setPixmap(qtImg)
+
+
+	# Whenever the 'load database' button is clicked, this function opens a dialog to locate the file and load the db object 
+	def loadDB(self):
+		dbPath, _ = QFileDialog.getOpenFileName(self,"Select Database File", "","Pickle File (*pk)")
+		if not os.path.exists(dbPath):
+			print('No database file found in path:', dbPath)
+			return
+		self.db = pickle.load(open(dbPath, "rb" ))
+		self.label_2.setText('Database: ' + dbPath)
+		self.label_3.setText('Identities: ' + str(self.db.labels.shape[0]))
+
+		# Pull data from the database object
+		data = self.db.db
+		labels = np.expand_dims(self.db.labels,1)
+		names = np.expand_dims(self.db.names, 1)
+
+		#data = np.append(np.expand_dims(self.db.labels,1), data, axis=1)
+		self.dbModel = TableModel(names)
+		self.table.setModel(self.dbModel)
+
+		#Enable disabled control widgets
+		self.enableWidgets()
+
+
+	# Whenever the 'save database' button is clicked, this function opens a dialog to chose the location and save the db object there
+	def saveDB(self):
+		if self.db is not None:
+			dbPath, _ = QFileDialog.getSaveFileName(self,"Create DB File", "","Pickle Files (*pk)")
+			pickle.dump(self.db, open(dbPath, "wb" ) )
+
+
+	# Launches a new video Thread
+	def takeCameraImage(self):
+		#if hasattr(self, "t"):
+		#	return
 		# create the video capture thread
 		self.t = VideoThread()
 		# connect its signal to the update_image slot
@@ -96,9 +193,27 @@ class Ui(QMainWindow):
 		self.t.start()
 
 
+	# Launches a video thread
+	def analyzeCameraImage(self):
+		self.resultLabel.setText('')
+		#if hasattr(self, "t"):
+		#	return
+		# create the video capture thread
+		self.t = VideoThread()
+		# connect its signal to the update_image slot
+		self.t.change_pixmap_signal.connect(self.update_image_noborder)
+		# start the thread
+		self.t.start()
+
+
+	# Opens a dialog for a image file, loads it and changes the imageDisplay label pixmap
+	# A rectangle is drawn in the center of the image to guide users for proper positioning
 	def selectImage(self):
 		imgPath, _ = QFileDialog.getOpenFileName(self,"Select Image File", "","image (*.jpg *.jpeg *.png *.gif)")
 		img = cv2.imread(imgPath)
+		self.cvImg = img
+		if img is None:
+			return
 		h, w, _ = img.shape
 		h = h//2
 		w = w//2		
@@ -106,22 +221,44 @@ class Ui(QMainWindow):
 		qtImg = self.convert_cv_qt(img)
 		self.imageDisplay.setPixmap(qtImg)
 
+
+	# When the capture button is clicked, the current image is passed through the network and added to the database
 	def captureClicked(self):
 		if hasattr(self, "t"):
 			self.t.requestInterruption()
-		print("cap")
-		
+		# Add image to database
+		embeddings = self.network.detectFaces(self.cvImg)
+		self.db.addId(embeddings, name=self.lineEdit.text())
+		self.dbModel = TableModel(np.expand_dims(self.db.names, 1))
+		self.table.setModel(self.dbModel)
+		self.label_3.setText('Identities: ' + str(self.db.labels.shape[0]))
+
 
 	#Updates the label with a new opencv image	
 	@pyqtSlot(np.ndarray)
 	def update_image(self, img):
+		# Save the original cv image for later use
+		self.cvImg = img
+		# Update the image in enrollment tab
 		h, w, _ = img.shape
 		h = h//2
 		w = w//2		
 		img = cv2.rectangle(img,(w-150,h-190),(w+150,h+190),(0,255,0),3)	
 		qtImg = self.convert_cv_qt(img)
 		self.imageDisplay.setPixmap(qtImg)
+		
+
+	#Updates the label with a new opencv image	
+	@pyqtSlot(np.ndarray)
+	def update_image_noborder(self, img):
+		# Save the original cv image for later use
+		self.cvImg = img
+		# update the image in analysis tab
+		qtImg2 = self.convert_cv_qt(img)
+		self.analysisImageDisplay.setPixmap(qtImg2)
 	
+
+	# Converts an img from openCV nupy matrix into 
 	def convert_cv_qt(self, img):
 		rgbImage = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 		h, w, ch = rgbImage.shape
@@ -140,46 +277,57 @@ class Ui(QMainWindow):
 		qtImg = QImage(rgbImage.data, w, h, bytes_per_line, QImage.Format_RGB888)
 		return QPixmap.fromImage(qtImg)
 
+
+	# Reacts on the left menu button clicks. Switches the page from analysis to database
 	def databaseClicked(self):
+		# Set he left menu marker to the appropriate item
 		self.databaseButton.setStyleSheet("QPushButton#databaseButton {border-right: 4px solid rgb(253,170,42);}")
 		self.analysisButton.setStyleSheet("QPushButton#analysisButton {border: 0px ;}")
+		
+		# Switch page to database
+		self.stackedWidget.setCurrentIndex(0)
+		# Set header text
+		self.headerLabel.setText("   Database Manager")
 
 
+	# Reacts on the left menu button clicks. Switches the page from database to analysis
 	def analysisClicked(self):
+		# Set he left menu marker to the appropriate item
 		self.analysisButton.setStyleSheet("QPushButton#analysisButton {border-right: 4px solid rgb(253,170,42);}")
 		self.databaseButton.setStyleSheet("QPushButton#databaseButton {border: 0px ;}")
 
-
-	def moveWindow(self, event):
-		# If maximized change to normal
-		if self.isMaximized():
-			self.showNormal()
-		# Move the window
-		#if event.buttons() == QtCore.Qt.LeftButton:
-		self.move(self.pos() + event.globalPos() - self.dragPos)
-		self.dragPos = event.globalPos()
-		event.accept()	
-
-	# Save the position of the drag
-	def mousePressEvent(self, event):
-		self.dragPos = event.globalPos()
+		# Switch page to analysis
+		self.stackedWidget.setCurrentIndex(1)
+		# Set header text
+		self.headerLabel.setText("   Analysis")
 
 
-	def roundCorners(self):
-		radius = 10.0
-		path = QPainterPath()
-		path.addRoundedRect(QRectF(self.rect()), radius, radius)
-		mask = QRegion(path.toFillPolygon().toPolygon())
-		self.setMask(mask)
-
-	# When the maximize button is clicked, this functions changes the view appropriatelly
-	def maximizeClicked(self):
-		if self.isMaximized():
-			self.showNormal()
-		else:
-			self.showMaximized()	
+	# Request video thread to interrupt when the close button of the app is clicked
+	def closeEvent(self, event):
+		if hasattr(self, "t"):
+			self.t.requestInterruption()
 
 
+# Displays the database in tabular format
+# https://www.learnpyqt.com/tutorials/qtableview-modelviews-numpy-pandas/
+class TableModel(QAbstractTableModel):
+	def __init__(self, data):
+		super(TableModel, self).__init__()
+		self._data = data
+
+	def data(self, index, role):
+		if role == Qt.DisplayRole:
+			value = self._data[index.row(), index.column()]
+			return str(value)
+
+	def rowCount(self, index):
+		return self._data.shape[0]
+
+	def columnCount(self, index):
+		return self._data.shape[1]
+
+
+# Thread for managing the webcam image capture
 class VideoThread(QThread):
 	change_pixmap_signal = pyqtSignal(np.ndarray)
 
@@ -200,6 +348,7 @@ class VideoThread(QThread):
 		cap.release()
 		cv2.destroyAllWindows()
 		self.exit(0)		
+		
 				
 
 def main(args=None):
@@ -209,8 +358,6 @@ def main(args=None):
 	app = QApplication(sys.argv)
 	app.setAttribute(Qt.AA_UseHighDpiPixmaps)
 	window = Ui()
-	window.setAttribute(Qt.WA_NoSystemBackground, True)
-	window.setAttribute(Qt.WA_TranslucentBackground, True)
 	
 	app.exec_()
 
