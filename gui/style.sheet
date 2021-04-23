@@ -94,6 +94,15 @@ QPushButton#loadButton{
 QPushButton#loadButton:hover{
 	color:gray;
 }
+QPushButton#newDBButton{
+	border-style: solid;
+	border-width: 1px;
+	background: rgb(45,60,93);
+	color: white;
+}
+QPushButton#newDBButton:hover{
+	color:gray;
+}
 
 QTableWidget#dbTable{
 	background: rgb(255,255,255);
