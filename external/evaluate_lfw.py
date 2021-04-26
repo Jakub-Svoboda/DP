@@ -24,6 +24,20 @@ LFW_PAIRS_PATH = r'pairs.txt'
 LFW_DIR = r'lfw_mtcnn'
 CKPT_DIR = os.path.join('./checkpoints')    # Best .hdf5 model storage
 
+@tf.function
+def processImage(imgPath,label=None):
+  # load the raw data from the file
+  img = tf.io.read_file(imgPath)
+  img = tf.image.decode_jpeg(img, channels=3)
+
+  # Convert to tf float and resize to IMG_SIZE
+  img = tf.image.convert_image_dtype(img, tf.float32)
+  img = tf.image.resize(img, (IMG_SIZE,IMG_SIZE))
+  if label is not None:
+    return img, label
+  else:
+      return img
+
 def distance(embeddings1, embeddings2, distance_metric=0):
     if distance_metric == 0:
         # Euclidian distance
