@@ -18,7 +18,7 @@ import os
 IMG_SIZE = 224							# 224 for mobilenet, 299 for inception
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 BACKBONE = 'MobileNetV3Large'			# Selects the backbone CNN, see getNetwork() for all optinons
-WEIGHTS = os.path.join('checkpoints' ,'9708.hdf5')
+WEIGHTS = os.path.join('checkpoints' ,'mobile_9708.hdf5')
 
 
 # Converts the 'img' passed to tensorflow float type and resizes it to appropriate NN input size.
