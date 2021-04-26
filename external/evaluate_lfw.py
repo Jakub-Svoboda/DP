@@ -13,9 +13,6 @@ from sklearn import metrics
 from scipy.optimize import brentq
 import tensorflow_addons as tfa
 from tensorflow_addons.losses import metric_learning
-import datetime
-import mtcnn
-import cv2
 
 
 IMG_SIZE = 224                  # 224 for mobilenet, 299 for InceptionV3
@@ -24,6 +21,15 @@ LFW_PAIRS_PATH = r'pairs.txt'
 LFW_DIR = r'lfw_mtcnn'
 CKPT_DIR = os.path.join('./checkpoints')    # Best .hdf5 model storage
 AUTOTUNE = tf.data.experimental.AUTOTUNE
+
+# Set resolution to IMG_SHAPE
+def setShapes(image, label=None):
+  image.set_shape(IMG_SHAPE)
+  if label is not None:
+    label.set_shape([])
+    return image, label
+  else:
+    return image
 
 @tf.function
 def processImage(imgPath,label=None):
