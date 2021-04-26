@@ -23,6 +23,7 @@ IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 LFW_PAIRS_PATH = r'pairs.txt'
 LFW_DIR = r'lfw_mtcnn'
 CKPT_DIR = os.path.join('./checkpoints')    # Best .hdf5 model storage
+AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 @tf.function
 def processImage(imgPath,label=None):
