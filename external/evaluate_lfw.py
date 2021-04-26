@@ -17,6 +17,13 @@ import datetime
 import mtcnn
 import cv2
 
+
+IMG_SIZE = 224                  # 224 for mobilenet, 299 for InceptionV3
+IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
+LFW_PAIRS_PATH = r'pairs.txt'
+LFW_DIR = r'lfw_mtcnn'
+CKPT_DIR = os.path.join('./checkpoints')    # Best .hdf5 model storage
+
 def distance(embeddings1, embeddings2, distance_metric=0):
     if distance_metric == 0:
         # Euclidian distance
