@@ -1,12 +1,12 @@
-##############################################
-# Author: Jakub Svoboda
-# Email:  xsvobo0z@stud.fit.vutbr.cz
-# School: Brno University of Technology
-##############################################
-# This code handles the creation of the neural network and loades its weights.
-# The network can then create embeddings from image data. The alignment of the face
-# is realized by MTCNN module for python.
-##############################################
+"""
+Author: Jakub Svoboda
+Email:  xsvobo0z@stud.fit.vutbr.cz
+School: Brno University of Technology
+
+This code handles the creation of the neural network and loades its weights.
+The network can then create embeddings from image data. The alignment of the face
+is realized by MTCNN module for python.
+"""
 
 
 from mtcnn import MTCNN
@@ -21,18 +21,37 @@ BACKBONE = 'MobileNetV3Large'			# Selects the backbone CNN, see getNetwork() for
 WEIGHTS = os.path.join('checkpoints' ,'mobile_9708.hdf5')
 
 
-# Converts the 'img' passed to tensorflow float type and resizes it to appropriate NN input size.
+
 def processImage(img):
+	""" Converts the 'img' passed to tensorflow float type and resizes it to appropriate NN input size.
+
+	Args:
+		img (np.mat): Image for conversion.
+
+	Returns:
+		tf.float32: resized and converted 'img'.
+	"""
 	img = tf.image.convert_image_dtype(img, tf.float32)
 	img = tf.image.resize(img, (IMG_SIZE,IMG_SIZE))
 	return img	# Return as TF tensor
 
 
-# Creates a network based on passed parameters. The 'backbone' is the CNN for feature extraction,
-# 'embeddingSize' is the output dimension (128 is default, larger values generally do not inprove accuracy).
-# 'fcSize' specifies the size of the intermediate fully connected layer.
-# 'l2Norm' boolean parameter adds l2 normalization lambda layer at the very end of the network.
+
 def getNetwork(backbone = 'ResNet50V2', embeddingSize=128, fcSize=1024, l2Norm=True):
+	""" Creates a network based on passed parameters.
+
+	Args:
+		backbone (str, optional): the CNN for feature extraction. Defaults to 'ResNet50V2'.
+		embeddingSize (int, optional): output dimension. Larger values generally do not inprove accuracy. Defaults to 128.
+		fcSize (int, optional): specifies the size of the intermediate fully connected layer. Defaults to 1024.
+		l2Norm (bool, optional): adds l2 normalization lambda layer at the very end of the network.. Defaults to True.
+
+	Raises:
+		Exception: When the specified 'backbone' does not exist in the tf.keras.application module.
+
+	Returns:
+		tf.keras.Sequential: The constructed network architecture.
+	"""
 	if backbone == 'ResNet50V2':
 		baseModel = tf.keras.applications.ResNet50V2(input_shape=IMG_SHAPE, include_top=False, weights=None)
 	elif backbone == 'ResNet101V2':
@@ -68,29 +87,43 @@ def getNetwork(backbone = 'ResNet50V2', embeddingSize=128, fcSize=1024, l2Norm=T
 	return model
 
 
-# Class that encapsulates the identification network as well as the detector (MTCNN)
-# For inference, run the detectFace() method
+
 class IdentityNetwork():
+	""" Class that encapsulates the identification network as well as the detector (MTCNN)
+		For inference, run the detectFace() method.
+	"""
 	
-	# Constructor
+	
 	def __init__(self):
+		""" Constructor initializes the MTCNN detector and loads the identity NN model.
+		"""
 		# Initialilze MTCNN localiator
-		self.detector = MTCNN(steps_threshold=[0.70,0.70,0.8])
+		self.detector = MTCNN(weights_file = os.path.join('external', 'mtcnn_weights.npy'), steps_threshold=[0.70,0.70,0.8])
 		# MARGIN pixels from each direction of the bounding box should still be inculded in the cutout
 		self.margin = 32
 		self.initModel()
 
 
-	# Creates the model and pulls the stored weights from disk	
+	
 	def initModel(self):
+		""" Creates the model and pulls the stored weights from disk.	
+		"""
 		self.model = getNetwork(backbone = BACKBONE, embeddingSize=128, fcSize=1024, l2Norm=True)
 		self.model.summary()							# Prints model architecture to console
 		self.model.load_weights(WEIGHTS)				# You can point this to your own model
 		self.model.trainable = False
 
 
-	# Localizes face in passed numpy 'img' and generates embedding through the network.
+	
 	def detectFaces(self, img):
+		""" Localizes face in passed numpy 'img' and generates embedding through the network.
+
+		Args:
+			img (np.mat): Captured image in which the face is localized and detected.
+
+		Returns:
+			tf.float32 array: the 128 floats generated embedding.
+		"""
 		# Get the face bounding box for given image
 		result = self.detector.detect_faces(img)
 		# There can be zero faces in the image or mtcnn can fail at detection, in these cases, return empty array
