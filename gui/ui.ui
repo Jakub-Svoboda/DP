@@ -176,7 +176,7 @@
                 </property>
                 <property name="font">
                  <font>
-                  <pointsize>15</pointsize>
+                  <pointsize>14</pointsize>
                  </font>
                 </property>
                 <property name="text">
@@ -712,7 +712,7 @@
                           </property>
                           <property name="minimumSize">
                            <size>
-                            <width>110</width>
+                            <width>130</width>
                             <height>25</height>
                            </size>
                           </property>

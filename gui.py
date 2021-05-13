@@ -511,10 +511,14 @@ def main(args=None):
 	"""
 	# Allow DPI scaling for high resolution displays
 	QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+	QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 	# Create the main app window from an .ui file
 	app = QApplication(sys.argv)
-	app.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
+	font = qApp.font()
+	font.setPixelSize(11)
+	app.setFont(font)
 	window = Ui()
 	
 	app.exec_()
