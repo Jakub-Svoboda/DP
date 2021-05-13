@@ -188,7 +188,8 @@ class Ui(QMainWindow):
 			self.t.requestInterruption() 	
 		self.resultLabel.setText('')		# Reset old result labels
 		imgPath, _ = QFileDialog.getOpenFileName(self,"Select Image File", "","image (*.jpg *.jpeg *.png *.gif)")	#open file dialog
-		img = cv2.imread(imgPath)			# Read image from disk
+		#img = cv2.imread(imgPath)			# Read image from disk
+		img = cv2.imdecode(np.fromfile(imgPath, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
 		self.cvImg = img
 		if img is None:						# Read can fail, just return in this case
 			return
@@ -351,7 +352,8 @@ class Ui(QMainWindow):
 			self.t.requestInterruption() 		
 		# open dialog for image selection
 		imgPath, _ = QFileDialog.getOpenFileName(self,"Select Image File", "","image (*.jpg *.jpeg *.png *.gif)")
-		img = cv2.imread(imgPath)	# read from disk
+		#img = cv2.imread(imgPath)	# read from disk
+		img = cv2.imdecode(np.fromfile(imgPath, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
 		self.cvImg = img
 		if img is None:				# if read fails
 			return

@@ -1,3 +1,9 @@
+# Evalutation script for the LFW benchmark
+# Source:   https://github.com/royshau/FaceNet_TF2/blob/master/evaluate_on_lfw.py and
+#           https://github.com/royshau/FaceNet_TF2/blob/master/evaluation_metrics.py
+# See http://vis-www.cs.umass.edu/lfw/index.html for more information on how the metrics should be evaluated
+#
+
 from sklearn.model_selection import KFold
 from scipy import interpolate
 import tensorflow as tf
