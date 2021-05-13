@@ -263,7 +263,9 @@ class Ui(QMainWindow):
 		for idx in range(data.shape[0]):
 			self.table.setItem(idx, 0, QTableWidgetItem(str(names[idx][0])))	# Add name
 			self.table.setItem(idx, 1, QTableWidgetItem(str(labels[idx][0])))	# Add ID
-			removeRowButton = QPushButton('Remove')								# Add removal button
+			removeRowButton = QPushButton('')									# Add removal button
+			removeRowButton.setIcon(QIcon(os.path.join('gui', 'icons', 'delete.png')))
+			removeRowButton.setIconSize(QSize(10, 10))
 			removeRowButton.clicked.connect(self.removeRowButtonClicked)
 			self.table.setCellWidget(idx, 2, removeRowButton)
 		
