@@ -22,6 +22,8 @@ from network import IdentityNetwork
 from database import Database
 
 
+MIN_ACCEPTED_DISTANCE = 0.4			# the minimal angle (radians) between the two embeddings to be accepted as a match
+
 class Ui(QMainWindow):
 	""" Mainwindow derived class handling the overall gui functionality.
 
@@ -164,7 +166,10 @@ class Ui(QMainWindow):
 				self.resultLabel.setText('No face detected with MTCNN')
 				return 
 			minId, name, dist = self.db.findFace(embedding)	 	# Get the identity from the database	
-			self.resultLabel.setText('Name: ' + str(name) +'\nID: ' + str(minId) + '\nDistance: ' + str(dist.numpy()))
+			if dist < MIN_ACCEPTED_DISTANCE:
+				self.resultLabel.setText('Name: ' + str(name) +'\nID: ' + str(minId) + '\nDistance: ' + str(dist.numpy()))
+			else:
+				self.resultLabel.setText('No match found in database. \nClosest:' + str(name) +'\nDistance: '+ str(dist.numpy()))	
 		else:
 			print('No face found')	# print to console when MTCNN fails
 
